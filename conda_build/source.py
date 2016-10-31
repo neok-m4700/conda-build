@@ -186,18 +186,33 @@ def git_mirror_checkout_recursive(git, mirror_dir, checkout_dir, git_url, config
         submodules = []
     for submodule in submodules:
         matches = git_submod_re.match(submodule)
-        if matches and matches.group(2)[0] == '.':
+        if matches:
             submod_name = matches.group(1)
-            submod_rel_path = matches.group(2)
-            submod_url = urljoin(git_url + '/', submod_rel_path)
-            submod_mirror_dir = os.path.normpath(
-                os.path.join(mirror_dir, submod_rel_path))
-            if config.verbose:
-                print('Relative submodule %s found: url is %s, submod_mirror_dir is %s' % (
-                      submod_name, submod_url, submod_mirror_dir))
-            with TemporaryDirectory() as temp_checkout_dir:
-                git_mirror_checkout_recursive(git, submod_mirror_dir, temp_checkout_dir, submod_url,
-                                              config, git_ref, git_depth, False)
+            if matches.group(2)[0] == '.':
+                submod_rel_path = matches.group(2)
+                submod_url = urljoin(git_url + '/', submod_rel_path)
+                submod_mirror_dir = os.path.normpath(
+                    os.path.join(mirror_dir, submod_rel_path))
+                if config.verbose:
+                    print('Relative submodule %s found: url is %s, submod_mirror_dir is %s' % (
+                          submod_name, submod_url, submod_mirror_dir))
+                with TemporaryDirectory() as temp_checkout_dir:
+                    git_mirror_checkout_recursive(git, submod_mirror_dir, temp_checkout_dir, submod_url,
+                                                  config, git_ref, git_depth, False)
+            else:
+                submod_url = matches.group(2)
+                git_dn = submod_url.split('://')[-1].replace('/', os.sep)
+                if git_dn.startswith(os.sep):
+                    git_dn = git_dn[1:]
+                git_dn = git_dn.replace(':', '_')
+                submod_mirror_dir = join(config.git_cache, git_dn)
+                if config.verbose:
+                    print('Absolute submodule %s found: url is %s, submod_mirror_dir is %s' % (
+                          submod_name, submod_url, submod_mirror_dir))
+                git_mirror_checkout_recursive(
+                    git, submod_mirror_dir, os.path.join(checkout_dir, submod_name),
+                    submod_url, config, git_ref, git_depth, False
+                )
 
     if is_top_level:
         # Now that all relative-URL-specified submodules are locally mirrored to
