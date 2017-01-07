@@ -882,7 +882,6 @@ def build(m, config, post=None, need_source_download=True, need_reparse_in_env=F
     :type m: Metadata
     :type post: bool or None. None means run the whole build. True means run
     post only. False means stop just before the post.
-    :type keep_old_work: bool: Keep any previous work directory.
     :type need_source_download: bool: if rendering failed to download source
     (due to missing tools), retry here after build env is populated
     '''
@@ -1232,8 +1231,12 @@ def test(recipedir_or_package_or_metadata, config, move_broken=True):
     print("TEST START:", metadata.dist())
 
     # Needs to come after create_files in case there's test/source_files
-    print("Deleting work directory,", config.work_dir)
-    utils.rm_rf(config.work_dir)
+    if not config.keep_old_work:
+        print("Deleting work directory,", config.work_dir)
+        utils.rm_rf(config.work_dir)
+    else:
+        print("Renaming work directory,", config.work_dir + '_old')
+        os.rename(config.work_dir, config.work_dir + '_old')
 
     get_build_metadata(metadata, config=config)
     specs = ['%s %s %s' % (metadata.name(), metadata.version(), metadata.build_id())]
