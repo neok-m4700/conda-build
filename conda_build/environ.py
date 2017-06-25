@@ -659,16 +659,14 @@ def get_install_actions(prefix, specs, env, retries=0, subdir=None,
         conda_log_level = logging.DEBUG
     else:
         capture = utils.capture
-    for feature, value in feature_list:
-        if value:
-            specs.append('%s@' % feature)
+    features = tuple('%s@' % feature for feature, value in feature_list if value)
 
     bldpkgs_dirs = ensure_list(bldpkgs_dirs)
 
     index, index_ts = get_build_index(subdir, list(bldpkgs_dirs)[0], output_folder=output_folder,
                                       channel_urls=channel_urls, debug=debug, verbose=verbose,
                                       locking=locking, timeout=timeout)
-    specs = tuple(_ensure_valid_spec(spec) for spec in specs)
+    specs = tuple(_ensure_valid_spec(spec) for spec in specs + features)
 
     if (specs, env, subdir, channel_urls) in cached_actions and last_index_ts >= index_ts:
         actions = cached_actions[(specs, env, subdir, channel_urls)].copy()
